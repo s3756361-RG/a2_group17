@@ -13,14 +13,14 @@ public class application {
 	private static String [][] userDatabase = new String [50][5];
 	// Set number of users to 0
 	private static int num_users = 0;
-	
+
 	// Create a link between where data is in the user database array and its id
 	private static final int USERNAME_INDEX = 0;
 	private static final int NAME_INDEX = 1;
 	private static final int EMAIL_INDEX = 2;
 	private static final int PASSWD_INDEX = 3;
 	private static final int ROLE_INDEX = 4;
-	
+
 	// Create array to hold all ticket information, max 500 tickets
 	private static String ticketDatabase[][] = new String [500][8];
 	// Set number of tickets to 0
@@ -35,7 +35,7 @@ public class application {
 	private static final int TICKET_DESCRIPTION = 5;
 	private static final int TICKET_SEVERITY = 6;
 	private static final int TICKET_STATUS = 7;
-	
+
 	// shared Scanner which can be used by all helper methods below
 	private static Scanner SC = new Scanner(System.in);
 
@@ -43,10 +43,10 @@ public class application {
 	public static void main(String[] args) {
 		// Insert all technicians and a demo user
 		insertDefaultUsers();
-		
+
 		// Menu system for the program
 		String selection;
-		
+
 		// Check user input until the exit function is met, i.e. X or x
 		do {
 			// Display Menu Options
@@ -57,17 +57,17 @@ public class application {
 			System.out.println("C. Reset password");
 			System.out.println("X. Exit ticketing system");
 			System.out.println();
-			
+
 			// Prompt user to enter selection
 			System.out.print("Enter selection: ");
 			selection = SC.nextLine();
 			System.out.println();
-			
+
 			// Validate selection input length, ensure it is only 1 character in length
 			if (selection.length() != 1) {
 				System.out.println("Error - invalid selection!");
 			}
-			
+
 			// Otherwise, take input and go to appropriate method
 			else {
 				// process user's selection
@@ -105,10 +105,10 @@ public class application {
 			System.out.print("=");
 		}
 		System.out.println();
-		
+
 		// Print banner name
 		System.out.println(bannerName);
-		
+
 		for (int i = 0; i < bannerName.length(); ++i) {
 			System.out.print("=");
 		}
@@ -135,19 +135,19 @@ public class application {
 	// Checks whether a user exists in the system
 	private static boolean check_login(final String[][] userDatabase, final String USERNAME, final String PASSWORD) {
 		boolean valid = false;
-		
+
 		try {
-		for(int i = 0; i < userDatabase.length; ++i){
-			
-			// Username and password must match
-			if(USERNAME.contentEquals(userDatabase[i][USERNAME_INDEX])) {
-				if(PASSWORD.contentEquals(userDatabase[i][PASSWD_INDEX])) {
-					// If user exists, set to true
-					valid = true;
-					break;
+			for(int i = 0; i < userDatabase.length; ++i){
+
+				// Username and password must match
+				if(USERNAME.contentEquals(userDatabase[i][USERNAME_INDEX])) {
+					if(PASSWORD.contentEquals(userDatabase[i][PASSWD_INDEX])) {
+						// If user exists, set to true
+						valid = true;
+						break;
+					}
 				}
 			}
-		}
 		} catch (NullPointerException npe) {
 			System.out.println("\nError! User does not exist\n");
 			attemptLogin();
@@ -174,18 +174,18 @@ public class application {
 		// Left debugging code in below for checking characters are typed correctly
 		//System.out.println("\nYour username is: " + username);
 		//System.out.println("Your password is: " + passwd + '\n');
-		
+
 		//Check login details
-		do {
-			valid = check_login(userDatabase, username, passwd);
-		} while(!valid);
-		
+		//		do {
+		//			valid = check_login(userDatabase, username, passwd);
+		//		} while(!valid);
+
 		// If valid login exists, then start next menu system
 		if (check_login(userDatabase, username, passwd))
 		{
 			// Logged in menu system for the program
 			String selection;
-			
+
 			// Check user input until the exit function is met, i.e. X or x
 			do {
 				// Display Menu Options
@@ -240,22 +240,20 @@ public class application {
 				System.out.println();
 
 			} while (!selection.equalsIgnoreCase("X"));
-		}
-		else
-		{
+		} else {
 			// Error if login is incorrect
 			System.out.println("Incorrect Login");
 		}
 		System.out.println();
 	}
-	
+
 	// Create an account for the a new user in the system
 	private static void createAccount() {
 		// Create account banner
 		String CREATEACC_BANNER = "Create account";
 		banner(CREATEACC_BANNER);
 		System.out.println("Prompts to create an account");
-		
+
 		// Set function variables
 		String username = "";
 		String name = "";
@@ -267,7 +265,7 @@ public class application {
 		username = get_user_input();
 
 		// Check for uniqueness - Later Sprint
-		
+
 		// Request name & validate
 		System.out.print("Please enter your name : ");
 		name = get_user_input();
@@ -285,10 +283,10 @@ public class application {
 
 		// Debug for checking number of users
 		//System.out.print("Total number of users: " + num_users);
-		
+
 		// All created users are staff not technicians 
 		String defaultRole = "0";
-	
+
 		// Add user data to userDatabase array, and increase number of users value
 		userDatabase[num_users][USERNAME_INDEX] = username;
 		userDatabase[num_users][NAME_INDEX] = name;
@@ -296,14 +294,14 @@ public class application {
 		userDatabase[num_users][PASSWD_INDEX] = passwd;
 		userDatabase[num_users][ROLE_INDEX] = defaultRole;
 		++num_users;
-		
+
 		// Inform the user the accounts was created successfully
 		System.out.println("Account " + username + " created");
-		
+
 		// Debug for checking number of users
 		//System.out.print("Total number of users: " + num_users);
 		System.out.println();
-		
+
 		// Debug for showing all users created after account created
 		/*for (int i = 0; i < num_users; i++) {
 			System.out.print(userDatabase[i][0] + ": ");
@@ -313,7 +311,7 @@ public class application {
 			System.out.println();
 		}
 		System.out.println();
-		*/
+		 */
 	}
 
 	// Function to reset password - later sprint
@@ -412,7 +410,7 @@ public class application {
 		ticketDatabase[num_tickets][TICKET_SEVERITY] = severity;
 		ticketDatabase[num_tickets][TICKET_STATUS] = "Open";
 		++num_tickets;
-		
+
 		System.out.println("\nTicket successfully created!");
 	}
 
@@ -425,6 +423,32 @@ public class application {
 		System.out.println("!!!FUNCTIONALITY NOT YET COMPLETED!!!");
 		// show tickets
 		// if tech show closed ones too
+	}
+
+	//Function to search either the ticket or user database and return desired search value
+	private static String[][] database_search(final String[][] DATABASE_TYPE, final String SEARCH_KEY, final int DATABASE_FIELDS){
+		String[][] return_value = new String[1][DATABASE_FIELDS];
+		boolean found = false;
+
+		for(int i = 0; i < DATABASE_TYPE.length; ++i) {
+			for(int j = 0; j < DATABASE_FIELDS; ++j) {
+				//Search through the database fields to find a match with the key
+				if(SEARCH_KEY.contentEquals(DATABASE_TYPE[i][j])) {
+					//If a match is found write all field values into return value[][]
+					for(int x = 0; x < DATABASE_FIELDS; ++x) {
+						return_value[1][x] = DATABASE_TYPE[i][x];
+					}
+					found = true;
+					break;
+				}
+			}
+		}
+
+		if(found) {
+			return return_value;
+		} else {
+			return null;
+		}
 	}
 
 	// Function to change ticket priority
@@ -446,7 +470,7 @@ public class application {
 		System.out.println("!!!FUNCTIONALITY NOT YET COMPLETED!!!");
 		// code to close ticket
 	}
-	
+
 	// Function to add users that are not ones manually created by each user
 	private static void insertDefaultUsers()
 	{
