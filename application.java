@@ -1,4 +1,3 @@
-//package application;
 package application;
 
 import java.io.*; 
@@ -35,6 +34,8 @@ public class application {
 	private static final int TICKET_DESCRIPTION = 5;
 	private static final int TICKET_SEVERITY = 6;
 	private static final int TICKET_STATUS = 7;
+	private static final int TICKET_ID = 8;
+	private static final int TICKET_SERVICEDESK = 9;
 
 	// shared Scanner which can be used by all helper methods below
 	private static Scanner SC = new Scanner(System.in);
@@ -351,6 +352,7 @@ public class application {
 		String staffID = "";
 		String description = "";
 		String severity = "";
+		String service_desk = "";
 		String confirmation = "";
 		final String CREATETICKET_BANNER = "Create a ticket";
 		banner(CREATETICKET_BANNER);
@@ -383,12 +385,15 @@ public class application {
 		switch(severity) {
 		case "1" :
 			severity = "Low";
+			service_desk = "1";
 			break;
 		case "2" :
 			severity = "Medium";
+			service_desk = "1";
 			break;
 		case "3" :
 			severity = "High";
+			service_desk = "2";
 			break;
 		}
 		//Display final ticket to user to check
@@ -409,6 +414,8 @@ public class application {
 		ticketDatabase[num_tickets][TICKET_DESCRIPTION] = description;
 		ticketDatabase[num_tickets][TICKET_SEVERITY] = severity;
 		ticketDatabase[num_tickets][TICKET_STATUS] = "Open";
+		ticketDatabase[num_tickets][TICKET_ID] = String.valueOf(num_tickets);
+		ticketDatabase[num_tickets][TICKET_SERVICEDESK] = service_desk; 
 		++num_tickets;
 
 		System.out.println("\nTicket successfully created!");
@@ -456,9 +463,10 @@ public class application {
 	{
 		String CHGTICKETPR_BANNER = "Change ticket priority";
 		banner(CHGTICKETPR_BANNER);
-		System.out.println("Which ticket would you like to change priority for: ");
-		System.out.println("!!!FUNCTIONALITY NOT YET COMPLETED!!!");
-		// code to change ticket priority
+		System.out.println("Enter the ticket ID you would like to change priority for: ");
+		String ticket_id = get_user_input();
+		
+		
 	}
 
 	// Function to close ticket
