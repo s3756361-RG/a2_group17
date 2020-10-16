@@ -21,8 +21,9 @@ public class application {
 	private static final int ROLE_INDEX = 4;
 
 	// Create array to hold all ticket information, max 500 tickets
-	private static String ticketDatabase[][] = new String [500][8];
-	// Set number of tickets to 0
+	private static final int NUM_TICKET_FIELDS = 10;
+	private static final int MAX_NUM_TICKETS = 500;
+	private static String ticketDatabase[][] = new String [MAX_NUM_TICKETS][NUM_TICKET_FIELDS];
 	private static int num_tickets = 0;
 
 	// Create a link between where data is in the ticket database array and its id
@@ -30,7 +31,7 @@ public class application {
 	private static final int TICKET_LNAME = 1;
 	private static final int TICKET_STAFFID = 2;
 	private static final int TICKET_EMAIL = 3;
-	private static final int TICKET_CONATACT = 4;
+	private static final int TICKET_CONTACT = 4;
 	private static final int TICKET_DESCRIPTION = 5;
 	private static final int TICKET_SEVERITY = 6;
 	private static final int TICKET_STATUS = 7;
@@ -338,22 +339,42 @@ public class application {
 		return valid;
 	}
 
+	private static String[] set_ticket_severity(final String severity) {
+
+		String[] severity_rating = new String[2];
+		final int SERVICE_DESK = 1;
+		final int RATING = 0;
+		switch(severity) {
+		case "1" :
+			severity_rating[RATING] = "Low";
+			severity_rating[SERVICE_DESK] = "1";
+			break;
+		case "2" :
+			severity_rating[RATING] = "Medium";
+			severity_rating[SERVICE_DESK] ="1";
+			break;
+		case "3" :
+			severity_rating[RATING] = "High";
+			severity_rating[SERVICE_DESK] = "2";
+			break;
+		}
+		return severity_rating;
+	}
+
 	// Function to create ticket in the system
 	private static void createTicket(final String USERNAME)
 	{
-		String username = "";
 		String[] full_name;
-		String fname = "";
-		final int FNAME_INDEX = 0;
-		String lname = "";
-		final int LNAME_INDEX = 1;
-		String email = "";
-		String contact_number = "";
-		String staffID = "";
-		String description = "";
+		String username = "";
+		String[] severity_rating;
 		String severity = "";
 		String service_desk = "";
-		String confirmation = "";
+		String fname = "";
+		String lname = "";
+		String email = "";
+		String ticket_id = "";
+		final int FNAME_INDEX = 0;
+		final int LNAME_INDEX = 1;
 		final String CREATETICKET_BANNER = "Create a ticket";
 		banner(CREATETICKET_BANNER);
 		System.out.println("\nEnter details for ticket below");
@@ -367,41 +388,30 @@ public class application {
 				fname = full_name[FNAME_INDEX];
 				lname = full_name[LNAME_INDEX];
 				email = userDatabase[i][EMAIL_INDEX];
+				ticket_id = String.valueOf(num_tickets);;
 				break;
 			}
 		}
 		//Get remaining data from user
 		System.out.print("\nPlease enter your staffID: ");
-		staffID = get_user_input();
+		String staffID = get_user_input();
 		System.out.print("\nPlease enter your contact number: ");
-		contact_number = get_user_input();
+		String contact_number = get_user_input();
 		System.out.print("\nPlease enter a brief description of the problem: ");
-		description = get_user_input();
+		String description = get_user_input();
 		System.out.print("\nPlease set the severity (1 = Low | 2 = Medium | 3 = High): ");
 		do {
 			severity = get_user_input();
 		} while(!check_severity(severity));
-		//Translate selection
-		switch(severity) {
-		case "1" :
-			severity = "Low";
-			service_desk = "1";
-			break;
-		case "2" :
-			severity = "Medium";
-			service_desk = "1";
-			break;
-		case "3" :
-			severity = "High";
-			service_desk = "2";
-			break;
-		}
+
+		severity_rating = set_ticket_severity(severity);
+
 		//Display final ticket to user to check
 		System.out.println("Check the final ticket below");
-		System.out.println("\nFirst Name: " + fname + "\nLast Name: " + lname + "\nStaffID: " + staffID + "\nEmail: "
-				+ email + "\nContact Number: " + contact_number + "\nDescription: " + description + "\nSeverity: " + severity);
+		System.out.println("\nTicket ID: " + ticket_id + "\nFirst Name: " + fname + "\nLast Name: " + lname + "\nStaffID: " + staffID + "\nEmail: "
+				+ email + "\nContact Number: " + contact_number + "\nDescription: " + description + "\nSeverity: " + severity_rating[0]);
 		System.out.print("\nIf the above details are correct type 'Y' else 'N' to restart: ");
-		confirmation = get_user_input();
+		String confirmation = get_user_input();
 		if(!confirmation.toUpperCase().contentEquals("Y")) {
 			createTicket(username);
 		}
@@ -410,11 +420,11 @@ public class application {
 		ticketDatabase[num_tickets][TICKET_LNAME] = lname;
 		ticketDatabase[num_tickets][TICKET_STAFFID] = staffID;
 		ticketDatabase[num_tickets][TICKET_EMAIL] = email;
-		ticketDatabase[num_tickets][TICKET_CONATACT] = contact_number;
+		ticketDatabase[num_tickets][TICKET_CONTACT] = contact_number;
 		ticketDatabase[num_tickets][TICKET_DESCRIPTION] = description;
 		ticketDatabase[num_tickets][TICKET_SEVERITY] = severity;
 		ticketDatabase[num_tickets][TICKET_STATUS] = "Open";
-		ticketDatabase[num_tickets][TICKET_ID] = String.valueOf(num_tickets);
+		ticketDatabase[num_tickets][TICKET_ID] = ticket_id;
 		ticketDatabase[num_tickets][TICKET_SERVICEDESK] = service_desk; 
 		++num_tickets;
 
@@ -432,19 +442,33 @@ public class application {
 		// if tech show closed ones too
 	}
 
+	//Function to display a single entry from any database
+	private static boolean display_entry(final int DATABASE_INDEX, final String[][] DATABASE_TYPE, final String MSG, final boolean MSG_REQUIRED){
+
+		if(MSG_REQUIRED) {
+			System.out.println("\n" + MSG);
+		}
+		System.out.println("\nTicket ID: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_ID] + "\nFirst Name: " + 
+		DATABASE_TYPE[DATABASE_INDEX][TICKET_FNAME] + "\nLast Name: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_LNAME] + "\nStaffID: " 
+				+ DATABASE_TYPE[DATABASE_INDEX][TICKET_STAFFID] + "\nEmail: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_EMAIL] 
+						+ "\nContact Number: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_CONTACT] + "\nDescription: " + 
+				DATABASE_TYPE[DATABASE_INDEX][TICKET_DESCRIPTION] + "\nSeverity: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_SEVERITY]);
+
+		return true;
+
+
+	}
+
 	//Function to search either the ticket or user database and return desired search value
-	private static String[][] database_search(final String[][] DATABASE_TYPE, final String SEARCH_KEY, final int DATABASE_FIELDS){
-		String[][] return_value = new String[1][DATABASE_FIELDS];
+	private static int database_search(final String[][] DATABASE_TYPE, final int NUM_ENTRIES, final String SEARCH_KEY, final int DATABASE_FIELDS){
+		int index = 0;
 		boolean found = false;
 
-		for(int i = 0; i < DATABASE_TYPE.length; ++i) {
+		for(int i = 0; i < NUM_ENTRIES; ++i) {
 			for(int j = 0; j < DATABASE_FIELDS; ++j) {
 				//Search through the database fields to find a match with the key
 				if(SEARCH_KEY.contentEquals(DATABASE_TYPE[i][j])) {
-					//If a match is found write all field values into return value[][]
-					for(int x = 0; x < DATABASE_FIELDS; ++x) {
-						return_value[1][x] = DATABASE_TYPE[i][x];
-					}
+					index = i;
 					found = true;
 					break;
 				}
@@ -452,22 +476,45 @@ public class application {
 		}
 
 		if(found) {
-			return return_value;
+			return index;
 		} else {
-			return null;
+			return -1;
 		}
 	}
 
 	// Function to change ticket priority
 	private static void changeTicketPriority()
 	{
+		int index = 0;
 		String CHGTICKETPR_BANNER = "Change ticket priority";
 		banner(CHGTICKETPR_BANNER);
+		String confirmation = "";
+		String new_severity = "";
+		String service_desk[];
+		final int NEW_SERVICE_DESK = 1;
+		//Retrieve ticket from user
 		System.out.println("Enter the ticket ID you would like to change priority for: ");
 		String ticket_id = get_user_input();
-		
-		
+		//Search for ticket and return
+		index = database_search(ticketDatabase, num_tickets, ticket_id, NUM_TICKET_FIELDS);
+		if(index == -1) {
+			System.out.println("Sorry, ticket not found!");
+		}
+		display_entry(index, ticketDatabase, "Is the below ticket the correct ticket? (Y/N)", true);
+		confirmation = get_user_input();
+		if(!confirmation.toUpperCase().contentEquals("Y")) {
+			changeTicketPriority();
+		} else {
+			System.out.print("\nPlease set the new severity status (1 = Low | 2 = Medium | 3 = High): ");
+			do {
+				new_severity = get_user_input();
+			} while (!check_severity(new_severity)); 
+			service_desk = set_ticket_severity(new_severity);
+			ticketDatabase[index][TICKET_SEVERITY] = service_desk[NEW_SERVICE_DESK];
+			System.out.println("\nTicket severity updated successfully!");
+		}
 	}
+
 
 	// Function to close ticket
 	private static void closeTicket()
