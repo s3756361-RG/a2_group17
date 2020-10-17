@@ -12,6 +12,7 @@ public class application {
 	private static String [][] userDatabase = new String [50][5];
 	// Set number of users to 0
 	private static int num_users = 0;
+	private static final int NUM_USER_FIELDS = 5;
 
 	// Create a link between where data is in the user database array and its id
 	private static final int USERNAME_INDEX = 0;
@@ -37,6 +38,9 @@ public class application {
 	private static final int TICKET_STATUS = 7;
 	private static final int TICKET_ID = 8;
 	private static final int TICKET_SERVICEDESK = 9;
+
+	//Error messages
+	private static final String NOT_TECHNICIAN_ERROR = "\nSorry, you must be a qualified technician to complete this action";
 
 	// shared Scanner which can be used by all helper methods below
 	private static Scanner SC = new Scanner(System.in);
@@ -173,10 +177,6 @@ public class application {
 		System.out.print("Please enter your password: ");
 		String passwd = get_user_input();
 
-		// Left debugging code in below for checking characters are typed correctly
-		//System.out.println("\nYour username is: " + username);
-		//System.out.println("Your password is: " + passwd + '\n');
-
 		//Check login details
 		//		do {
 		//			valid = check_login(userDatabase, username, passwd);
@@ -194,7 +194,7 @@ public class application {
 				final String MENU_BANNER = "IT ticketing system - Main Menu";
 				banner(MENU_BANNER);
 
-				System.out.println("\nA. Create an new ticket");
+				System.out.println("\nA. Create a new ticket");
 				System.out.println("B. View all open tickets");
 				System.out.println("C. Change ticket priority (Technicians only)");
 				System.out.println("D. Close ticket (Technicians only)");
@@ -222,13 +222,19 @@ public class application {
 						break;
 
 					case "C":
-						// check for being an Technician TBD
-						changeTicketPriority();
+						if(is_technician(username)) {
+							changeTicketPriority();
+						} else {
+							System.out.println(NOT_TECHNICIAN_ERROR);
+						}
 						break;
 
 					case "D":
-						// check for being an Technician TBD
-						closeTicket();
+						if(is_technician(username)) {
+							closeTicket();
+						} else {
+							System.out.println(NOT_TECHNICIAN_ERROR);
+						}
 						break;
 
 					case "X":
@@ -247,6 +253,18 @@ public class application {
 			System.out.println("Incorrect Login");
 		}
 		System.out.println();
+	}
+
+	//Function to check if logged in user is a technician
+	private static boolean is_technician(final String USERNAME) {
+		boolean valid;
+		int index = database_search(userDatabase, num_users, USERNAME, NUM_USER_FIELDS);
+		if(userDatabase[index][ROLE_INDEX].contentEquals("1") || userDatabase[index][ROLE_INDEX].contentEquals("2")) {
+			valid = true;
+		} else {
+			valid = false;
+		}
+		return valid;
 	}
 
 	// Create an account for the a new user in the system
@@ -388,7 +406,7 @@ public class application {
 				fname = full_name[FNAME_INDEX];
 				lname = full_name[LNAME_INDEX];
 				email = userDatabase[i][EMAIL_INDEX];
-				ticket_id = String.valueOf(num_tickets);;
+				ticket_id = "T" + String.valueOf(num_tickets);
 				break;
 			}
 		}
@@ -407,7 +425,7 @@ public class application {
 		severity_rating = set_ticket_severity(severity);
 
 		//Display final ticket to user to check
-		System.out.println("Check the final ticket below");
+		System.out.println("\nCheck the final ticket below");
 		System.out.println("\nTicket ID: " + ticket_id + "\nFirst Name: " + fname + "\nLast Name: " + lname + "\nStaffID: " + staffID + "\nEmail: "
 				+ email + "\nContact Number: " + contact_number + "\nDescription: " + description + "\nSeverity: " + severity_rating[0]);
 		System.out.print("\nIf the above details are correct type 'Y' else 'N' to restart: ");
@@ -422,7 +440,7 @@ public class application {
 		ticketDatabase[num_tickets][TICKET_EMAIL] = email;
 		ticketDatabase[num_tickets][TICKET_CONTACT] = contact_number;
 		ticketDatabase[num_tickets][TICKET_DESCRIPTION] = description;
-		ticketDatabase[num_tickets][TICKET_SEVERITY] = severity;
+		ticketDatabase[num_tickets][TICKET_SEVERITY] = severity_rating[0];
 		ticketDatabase[num_tickets][TICKET_STATUS] = "Open";
 		ticketDatabase[num_tickets][TICKET_ID] = ticket_id;
 		ticketDatabase[num_tickets][TICKET_SERVICEDESK] = service_desk; 
@@ -443,20 +461,27 @@ public class application {
 	}
 
 	//Function to display a single entry from any database
-	private static boolean display_entry(final int DATABASE_INDEX, final String[][] DATABASE_TYPE, final String MSG, final boolean MSG_REQUIRED){
-
+	private static boolean display_entry(final int DATABASE_INDEX, final String[][] DATABASE_TYPE, final String MSG, final boolean MSG_REQUIRED, final boolean USER_DATABASE){
+		String role = "";
 		if(MSG_REQUIRED) {
 			System.out.println("\n" + MSG);
 		}
-		System.out.println("\nTicket ID: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_ID] + "\nFirst Name: " + 
-				DATABASE_TYPE[DATABASE_INDEX][TICKET_FNAME] + "\nLast Name: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_LNAME] + "\nStaffID: " 
-				+ DATABASE_TYPE[DATABASE_INDEX][TICKET_STAFFID] + "\nEmail: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_EMAIL] 
-						+ "\nContact Number: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_CONTACT] + "\nDescription: " + 
-						DATABASE_TYPE[DATABASE_INDEX][TICKET_DESCRIPTION] + "\nSeverity: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_SEVERITY]);
-
+		if(!USER_DATABASE) {
+			System.out.println("\nTicket ID: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_ID] + "\nFirst Name: " + 
+					DATABASE_TYPE[DATABASE_INDEX][TICKET_FNAME] + "\nLast Name: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_LNAME] + "\nStaffID: " 
+					+ DATABASE_TYPE[DATABASE_INDEX][TICKET_STAFFID] + "\nEmail: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_EMAIL] 
+							+ "\nContact Number: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_CONTACT] + "\nDescription: " + 
+							DATABASE_TYPE[DATABASE_INDEX][TICKET_DESCRIPTION] + "\nSeverity: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_SEVERITY]);
+		} else {
+			if(DATABASE_TYPE[DATABASE_INDEX][ROLE_INDEX].contentEquals("1")) {
+				role = "Level 1 Technician";
+			} else if (DATABASE_TYPE[DATABASE_INDEX][ROLE_INDEX].contentEquals("2")) {
+				role = "Level 2 Technician";
+			}
+			System.out.println("\nUsername: " + DATABASE_TYPE[DATABASE_INDEX][USERNAME_INDEX] + "\nName: " + DATABASE_TYPE[DATABASE_INDEX][EMAIL_INDEX]
+					+ "\nRole: " + role);
+		}
 		return true;
-
-
 	}
 
 	//Function to search either the ticket or user database. The function returns the index of the search result or null
@@ -490,23 +515,24 @@ public class application {
 		banner(CHGTICKETPR_BANNER);
 		String new_severity = "";
 		String service_desk[];
-		final int NEW_SERVICE_DESK = 1;
+		final int NEW_RATING = 0;
 		//Retrieve ticket from user
-		System.out.println("Enter the ticket ID you would like to change priority for: ");
+		System.out.println("Enter the ticket ID you would like to change priority for (T<number>): ");
 		String ticket_id = get_user_input();
 		//Search for ticket and return
 		index = database_search(ticketDatabase, num_tickets, ticket_id, NUM_TICKET_FIELDS);
 		if(index == -1) {
-			System.out.println("Sorry, ticket not found!");
+			System.out.println("\nSorry, ticket not found!\n");
+			return;
 		}
-		display_entry(index, ticketDatabase, "Is the below ticket the correct ticket? (Y/N)", true);
+		display_entry(index, ticketDatabase, "Is the below ticket the correct ticket? (Y/N)", true, false);
 		if(get_user_confirmation("")) {
 			System.out.print("\nPlease set the new severity status (1 = Low | 2 = Medium | 3 = High): ");
 			do {
 				new_severity = get_user_input();
 			} while (!check_severity(new_severity)); 
 			service_desk = set_ticket_severity(new_severity);
-			ticketDatabase[index][TICKET_SEVERITY] = service_desk[NEW_SERVICE_DESK];
+			ticketDatabase[index][TICKET_SEVERITY] = service_desk[NEW_RATING];
 			System.out.println("\nTicket severity updated successfully!");
 		} else {
 			changeTicketPriority();
@@ -515,7 +541,7 @@ public class application {
 
 
 	//Allows technician to search for and close specified ticket
-	private static boolean closeTicket()
+	private static void closeTicket()
 	{
 		String CLOSETICKET_BANNER = "Ticket closure";
 		banner(CLOSETICKET_BANNER);
@@ -524,16 +550,19 @@ public class application {
 		System.out.println("Type the ticket ID of the ticket you'd like to close: ");
 		ticket_id = get_user_input();
 		index = database_search(ticketDatabase, num_tickets, ticket_id, NUM_TICKET_FIELDS);
-		display_entry(index, ticketDatabase, "Is the below ticket the correct ticket? (Y/N)", true);
+		if(index == -1) {
+			System.out.println("\nSorry, ticket not found!\n");
+			return; 
+		}
+		display_entry(index, ticketDatabase, "Is the below ticket the correct ticket? (Y/N)", true, false);
 		if(get_user_confirmation("")) {
 			if(get_user_confirmation("Would you like to close the ticket?")) {
-			ticketDatabase[index][TICKET_STATUS] = "Closed";
-			System.out.println("\nTicket status updated!");
+				ticketDatabase[index][TICKET_STATUS] = "Closed";
+				System.out.println("\nTicket status updated!");
 			}
 		} else {
 			closeTicket();
 		}
-		return false;
 	}
 
 	//This returns true for 'Y' input and false for 'N' input from the user
