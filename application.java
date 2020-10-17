@@ -449,17 +449,17 @@ public class application {
 			System.out.println("\n" + MSG);
 		}
 		System.out.println("\nTicket ID: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_ID] + "\nFirst Name: " + 
-		DATABASE_TYPE[DATABASE_INDEX][TICKET_FNAME] + "\nLast Name: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_LNAME] + "\nStaffID: " 
+				DATABASE_TYPE[DATABASE_INDEX][TICKET_FNAME] + "\nLast Name: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_LNAME] + "\nStaffID: " 
 				+ DATABASE_TYPE[DATABASE_INDEX][TICKET_STAFFID] + "\nEmail: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_EMAIL] 
 						+ "\nContact Number: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_CONTACT] + "\nDescription: " + 
-				DATABASE_TYPE[DATABASE_INDEX][TICKET_DESCRIPTION] + "\nSeverity: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_SEVERITY]);
+						DATABASE_TYPE[DATABASE_INDEX][TICKET_DESCRIPTION] + "\nSeverity: " + DATABASE_TYPE[DATABASE_INDEX][TICKET_SEVERITY]);
 
 		return true;
 
 
 	}
 
-	//Function to search either the ticket or user database and return desired search value
+	//Function to search either the ticket or user database. The function returns the index of the search result or null
 	private static int database_search(final String[][] DATABASE_TYPE, final int NUM_ENTRIES, final String SEARCH_KEY, final int DATABASE_FIELDS){
 		int index = 0;
 		boolean found = false;
@@ -488,7 +488,6 @@ public class application {
 		int index = 0;
 		String CHGTICKETPR_BANNER = "Change ticket priority";
 		banner(CHGTICKETPR_BANNER);
-		String confirmation = "";
 		String new_severity = "";
 		String service_desk[];
 		final int NEW_SERVICE_DESK = 1;
@@ -501,10 +500,7 @@ public class application {
 			System.out.println("Sorry, ticket not found!");
 		}
 		display_entry(index, ticketDatabase, "Is the below ticket the correct ticket? (Y/N)", true);
-		confirmation = get_user_input();
-		if(!confirmation.toUpperCase().contentEquals("Y")) {
-			changeTicketPriority();
-		} else {
+		if(get_user_confirmation("")) {
 			System.out.print("\nPlease set the new severity status (1 = Low | 2 = Medium | 3 = High): ");
 			do {
 				new_severity = get_user_input();
@@ -512,18 +508,53 @@ public class application {
 			service_desk = set_ticket_severity(new_severity);
 			ticketDatabase[index][TICKET_SEVERITY] = service_desk[NEW_SERVICE_DESK];
 			System.out.println("\nTicket severity updated successfully!");
+		} else {
+			changeTicketPriority();
 		}
 	}
 
 
-	// Function to close ticket
-	private static void closeTicket()
+	//Allows technician to search for and close specified ticket
+	private static boolean closeTicket()
 	{
 		String CLOSETICKET_BANNER = "Ticket closure";
 		banner(CLOSETICKET_BANNER);
-		System.out.println("Which ticket would you like to close: ");
-		System.out.println("!!!FUNCTIONALITY NOT YET COMPLETED!!!");
-		// code to close ticket
+		String ticket_id = "";
+		int index = 0;
+		System.out.println("Type the ticket ID of the ticket you'd like to close: ");
+		ticket_id = get_user_input();
+		index = database_search(ticketDatabase, num_tickets, ticket_id, NUM_TICKET_FIELDS);
+		display_entry(index, ticketDatabase, "Is the below ticket the correct ticket? (Y/N)", true);
+		if(get_user_confirmation("")) {
+			if(get_user_confirmation("Would you like to close the ticket?")) {
+			ticketDatabase[index][TICKET_STATUS] = "Closed";
+			System.out.println("\nTicket status updated!");
+			}
+		} else {
+			closeTicket();
+		}
+		return false;
+	}
+
+	//This returns true for 'Y' input and false for 'N' input from the user
+	private static boolean get_user_confirmation(final String MSG) {
+
+		System.out.println(MSG);
+		boolean valid = false;
+		boolean result = false;
+		do {
+			String confirmation = get_user_input();
+			if(confirmation.toUpperCase().contentEquals("Y")) {
+				valid = true;
+				result = true;
+			} else if (confirmation.toUpperCase().contentEquals("N")) {
+				valid = true;
+				result = false;
+			} else {
+				System.out.println("Error! Please enter either 'Y' or 'N' as confirmation");
+			}
+		}while (!valid);
+		return result;
 	}
 
 	// Function to add users that are not ones manually created by each user
