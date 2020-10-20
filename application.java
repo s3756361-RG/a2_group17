@@ -3,7 +3,7 @@ package application;
 import java.io.*; 
 import java.lang.*; 
 import java.util.*;
-
+import java.time.*;
 
 
 
@@ -14,6 +14,7 @@ public class application {
 	private static ArrayList<User> users = new ArrayList<User>();
 	private static ArrayList<Ticket> tickets = new ArrayList<Ticket>();
 	private static int numTickets = 0;
+	private static int TICKET_EXPIRY_TIME = 2; // This is in hours. Set to 0 for testing.
 
 	//Error messages
 	private static final String NOT_TECHNICIAN_ERROR = "\nSorry, you must be a qualified technician to complete this action";
@@ -24,7 +25,8 @@ public class application {
 	//Various enums to help with setting statuses and types
 	private enum TicketStatus{
 		CLOSED,
-		OPEN
+		OPEN, 
+		ARCHIVED
 	}
 
 	private enum Severity {
@@ -65,7 +67,7 @@ public class application {
 
 	}
 
-	static class Ticket {
+	static class Ticket implements Comparable<Ticket>{
 
 		private String fname; 
 		private String lname; 
@@ -78,9 +80,12 @@ public class application {
 		private String ticketID;
 		private String serviceDesk;
 		private String ticketAssignedTo;
+		private LocalDateTime createdDate;
+		private LocalDateTime closedDate;
 
 		private Ticket(final String FNAME, final String LNAME, final String STAFFID, final String EMAIL, final String CONTACT, final String DESCRIPTION, 
-				final Severity SEV, final TicketStatus STATUS, final String TICKET_ID, final String SERVICE_DESK, final String TICKET_ASSIGNED_TO ) {
+				final Severity SEV, final TicketStatus STATUS, final String TICKET_ID, final String SERVICE_DESK, final String TICKET_ASSIGNED_TO,
+				final LocalDateTime CREATED_DATE, final LocalDateTime CLOSED_DATE ) {
 			this.fname = FNAME;
 			this.lname = LNAME;
 			this.staffID = STAFFID;
@@ -92,7 +97,13 @@ public class application {
 			this.ticketID = TICKET_ID;
 			this.serviceDesk = SERVICE_DESK;
 			this.ticketAssignedTo = TICKET_ASSIGNED_TO;
+			this.createdDate = CREATED_DATE;
+			this.closedDate = CLOSED_DATE;
 		}
+
+		public TicketStatus getStatus() { return this.status; }
+		public LocalDateTime getClosedDate() { return this.closedDate; }
+		public String getTicketID() { return this.ticketID; }
 
 		private void setSev(Severity sev) {
 			this.sev = sev;
@@ -105,6 +116,23 @@ public class application {
 		private void setTicketAssignedTo(String ticketAssignedTo) {
 			this.ticketAssignedTo = ticketAssignedTo;
 		}
+
+		@Override
+		public int compareTo(Ticket t) {
+			if 	(fname.equals(t.fname) && 
+				lname.equals(t.lname) &&
+				staffID.equals(t.staffID) &&
+				email.equals(t.email) &&
+				contact.equals(t.contact) && 
+				description.equals(t.description) &&
+				//skip severity and close date and status && assignee
+				ticketID.equals(t.ticketID) &&
+				serviceDesk.equals(t.serviceDesk) &&
+				createdDate.equals(t.createdDate)) 
+					return 1;
+				else 
+					return 0;
+		}	
 	}
 	// Main class
 	public static void main(String[] args) {
@@ -259,6 +287,8 @@ public class application {
 				System.out.println("B. View all open tickets");
 				System.out.println("C. Change ticket priority (Technicians only)");
 				System.out.println("D. Close ticket (Technicians only)");
+				System.out.println("E. Archive tickets");
+				System.out.println("F. View all archived tickets");
 				System.out.println("X. Logout\n");
 
 				// Prompt user to enter selection
@@ -298,6 +328,18 @@ public class application {
 						}
 						break;
 
+					case "E":
+						ArrayList<Ticket> readyToArchive = getTicketsForArchiving(tickets);
+						int readyToArchiveCount = readyToArchive.size();
+						archiveTickets(readyToArchive);
+						if(readyToArchiveCount > 0)
+							System.out.println("Successfully archived " +  readyToArchiveCount + " tickets.");
+						else 
+							System.out.println("There are no tickets to be archived.");
+						break;
+					case "F": 
+						viewAllArchivedTickets();
+						break;
 					case "X":
 						System.out.println("Logging out...");
 						break;
@@ -473,7 +515,7 @@ public class application {
 
 			//Create ticket
 			tickets.add(new Ticket(fname, lname, staffID, email, contact_number, description, severity_rating, TicketStatus.OPEN, 
-					ticketID, serviceDesk, assignedTo));
+					ticketID, serviceDesk, assignedTo, LocalDateTime.now(), null));
 			++numTickets;
 
 			System.out.println("\nTicket successfully created!");
@@ -505,9 +547,10 @@ public class application {
 		banner(VIEWTICKET_BANNER);
 		System.out.println("Show me all your tickets ");
 		
-		for(int i = 0; i < tickets.size(); ++i) {
-			displayEntry(i, DatabaseType.TICKET, "", false);
-		}
+		tickets.forEach((t) -> {
+			if(t.getStatus() == TicketStatus.OPEN)
+				displayEntry(database_search(DatabaseType.TICKET, t.getTicketID()), DatabaseType.TICKET, "", false);
+		});
 	}
 
 	//Function to display a single entry from any database
@@ -517,13 +560,14 @@ public class application {
 			System.out.println("\n" + MSG);
 		}
 		if(TYPE == DatabaseType.TICKET) {
-			System.out.println("\nTicket ID: " + tickets.get(INDEX).ticketID + "\nFirst Name: " + 
-					tickets.get(INDEX).fname + "\nLast Name: " + tickets.get(INDEX).lname + "\nStaffID: " 
-					+ tickets.get(INDEX).staffID+ "\nEmail: " + tickets.get(INDEX).email 
-							+ "\nContact Number: " + tickets.get(INDEX).contact + "\nDescription: " + 
-							tickets.get(INDEX).description + "\nSeverity: " + tickets.get(INDEX).sev + "\nService"
-									+ " Desk Level: " + tickets.get(INDEX).serviceDesk + "\nAssigned To: "
-							+ tickets.get(INDEX).ticketAssignedTo);
+			Ticket tck = tickets.get(INDEX);
+			System.out.println("\nTicket ID: " + tck.ticketID + "\nFirst Name: " + 
+					tck.fname + "\nLast Name: " + tck.lname + "\nStaffID: " 
+					+ tck.staffID+ "\nEmail: " + tck.email 
+							+ "\nContact Number: " + tck.contact + "\nDescription: " + 
+							tck.description + "\nSeverity: " + tck.sev + "\nService"
+									+ " Desk Level: " + tck.serviceDesk + "\nAssigned To: "
+							+ tck.ticketAssignedTo);
 		} else {
 			if(users.get(INDEX).role.contentEquals("1")) {
 				role = "Level 1 Technician";
@@ -599,7 +643,6 @@ public class application {
 		}
 	}
 
-
 	//Allows technician to search for and close specified ticket
 	private static void closeTicket()
 	{
@@ -614,10 +657,12 @@ public class application {
 			System.out.println("\nSorry, ticket not found!\n");
 			return; 
 		}
-		displayEntry(index, DatabaseType.TICKET, "Is the below ticket the correct ticket? (Y/N)", true);
+		displayEntry(index, DatabaseType.TICKET, "Is the below ticket the correct ticket? (Y/N)", true);		
 		if(get_user_confirmation("")) {
 			if(get_user_confirmation("Would you like to close the ticket? (Y/N)")) {
-				tickets.get(index).setStatus(TicketStatus.CLOSED);
+				Ticket ticket = tickets.get(index);
+				ticket.setStatus(TicketStatus.CLOSED);
+				ticket.closedDate = LocalDateTime.now();
 				System.out.println("\nTicket status updated!");
 			}
 		} else {
@@ -655,5 +700,46 @@ public class application {
 		users.add(new User("zmalik", "Zayn Malik", "zmalik@cinco.com.au", "12345", "2", 0));
 		users.add(new User("demouser", "Demo User", "demouser@cinco.com.au", "12345", "0", 0));
 	}
+
+	// Returns an array of same size as the database with only returned tickets that should be Archived
+	// Input: ArrayList<Ticket> TicketDatabase
+	// Output: ArrayList<Ticket>
+	private static ArrayList<Ticket> getTicketsForArchiving(ArrayList<Ticket> tickets) {
+		banner("Getting tickets for archiving");
+		// Creates internal structure for holding tickets that will be appropriate for Archiving
+		ArrayList<Ticket> filteredTickets = new ArrayList<Ticket>();
+
+		// Loops through all tickets and checks for their status and expiry time
+		tickets.forEach((t) -> {
+			if (t.getStatus() == TicketStatus.CLOSED && LocalDateTime.now().isAfter(t.getClosedDate().plusHours(TICKET_EXPIRY_TIME)))
+				// If fits, it's added to archive list
+				filteredTickets.add(t);
+		});
+
+		return filteredTickets;
+	}
+
+	// Archives all the tickets passed
+	// Input: ArrayList<Ticket> tickets to archive
+	private static void archiveTickets(ArrayList<Ticket> ticketsToArchive) {
+		// Find tickets to be archived in the database and change their status
+		ticketsToArchive.forEach((t) -> tickets.get(database_search(DatabaseType.TICKET, t.getTicketID())).setStatus(TicketStatus.ARCHIVED));
+	}
+	// Function to view all tickets that are archived
+	private static void viewAllArchivedTickets()
+	{
+		// Messaging
+		String VIEWTICKET_BANNER = "View all archived tickets";
+		banner(VIEWTICKET_BANNER);
+		System.out.println("Displaying Archived tickets:");
+
+		tickets.forEach((t) -> {
+			if(t.getStatus() == TicketStatus.ARCHIVED)
+				displayEntry(database_search(DatabaseType.TICKET, t.getTicketID()), DatabaseType.TICKET, "", false);
+		});
+
+		System.out.println("End of Archived tickets display.");
+	}
+
 
 }
