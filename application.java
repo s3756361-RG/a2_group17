@@ -743,7 +743,7 @@ public class application {
 
 		return filteredTickets;
 	}
-
+	
 	// Archives all the tickets passed
 	// Input: ArrayList<Ticket> tickets to archive
 	private static void archiveTickets(ArrayList<Ticket> ticketsToArchive) {
