@@ -1,5 +1,4 @@
 package application;
-
 import java.io.*; 
 import java.lang.*; 
 import java.util.*;
@@ -7,6 +6,12 @@ import java.time.*;
 
 /* Ticketing system class */
 public class application {
+
+	// Create arraylists to hold all user and ticketing information
+	private static ArrayList<User> users = new ArrayList<User>();
+	private static TicketArrayList tickets = new TicketArrayList();
+	private static int numTickets = 0;
+	public static int TICKET_EXPIRY_TIME = 1; // This is in hours. Set to 0 for testing.
 
 	//Various enums to help with setting statuses and types
 	public enum TicketStatus{
@@ -89,17 +94,70 @@ public class application {
 		}
 	}
 
-	// Create arraylists to hold all user and ticketing information
-	private static ArrayList<User> users = new ArrayList<User>();
-	private static TicketArrayList tickets = new TicketArrayList();
-	private static int numTickets = 0;
-	public static int TICKET_EXPIRY_TIME = 1; // This is in hours. Set to 0 for testing.
-
 	//Error messages
 	private static final String NOT_TECHNICIAN_ERROR = "\nSorry, you must be a qualified technician to complete this action";
 
 	//Shared Scanner which can be used by all helper methods below
 	private static Scanner SC = new Scanner(System.in);
+
+	// Main class
+	public static void main(String[] args) {
+		// Insert all technicians and a demo user
+		insertDefaultUsers();
+
+		// Menu system for the program
+		String selection;
+
+		// Check user input until the exit function is met, i.e. X or x
+		do {
+			// Display Menu Options
+			String WELCOME_BANNER = "Welcome to the IT ticketing system";
+			banner(WELCOME_BANNER);
+			System.out.println("A. Log in (requires an existing account)");
+			System.out.println("B. Create an account");
+			System.out.println("C. Reset password");
+			System.out.println("X. Exit ticketing system");
+			System.out.println();
+
+			// Prompt user to enter selection
+			System.out.print("Enter selection: ");
+			selection = SC.nextLine();
+			System.out.println();
+
+			// Validate selection input length, ensure it is only 1 character in length
+			if (selection.length() != 1) {
+				System.out.println("Error - invalid selection!");
+			}
+
+			// Otherwise, take input and go to appropriate method
+			else {
+				// process user's selection
+				switch (selection.toUpperCase()) {
+					case "A":
+						attemptLogin();
+						break;
+
+					case "B":
+						createAccount();
+						break;
+
+					case "C":
+						resetPassword();
+						break;
+
+					case "X":
+						System.out.println("Exiting the program...");
+						break;
+
+					default:
+						System.out.println("Error - invalid selection!");
+				}
+			}
+			System.out.println();
+
+		} while (!selection.equalsIgnoreCase("X"));
+	}
+
 	//User class
 	static class User implements Comparable<User>{
 
@@ -124,9 +182,9 @@ public class application {
 			int compareAssignedTickets = u.num_assigned_tickets;
 			return this.num_assigned_tickets - compareAssignedTickets;
 		}
-
 	}
 
+	// Ticket class
 	static class Ticket implements Comparable<Ticket>{
 
 		private String fname; 
@@ -194,64 +252,6 @@ public class application {
 				return 0;
 		}	
 	}
-	// Main class
-	public static void main(String[] args) {
-		// Insert all technicians and a demo user
-		insertDefaultUsers();
-
-		// Menu system for the program
-		String selection;
-
-		// Check user input until the exit function is met, i.e. X or x
-		do {
-			// Display Menu Options
-			String WELCOME_BANNER = "Welcome to the IT ticketing system";
-			banner(WELCOME_BANNER);
-			System.out.println("A. Log in (requires an existing account)");
-			System.out.println("B. Create an account");
-			System.out.println("C. Reset password");
-			System.out.println("X. Exit ticketing system");
-			System.out.println();
-
-			// Prompt user to enter selection
-			System.out.print("Enter selection: ");
-			selection = SC.nextLine();
-			System.out.println();
-
-			// Validate selection input length, ensure it is only 1 character in length
-			if (selection.length() != 1) {
-				System.out.println("Error - invalid selection!");
-			}
-
-			// Otherwise, take input and go to appropriate method
-			else {
-				// process user's selection
-				switch (selection.toUpperCase()) {
-				case "A":
-					attemptLogin();
-					break;
-
-				case "B":
-					createAccount();
-					break;
-
-				case "C":
-					resetPassword();
-					break;
-
-				case "X":
-					System.out.println("Exiting the program...");
-					break;
-
-				default:
-					System.out.println("Error - invalid selection!");
-				}
-			}
-			System.out.println();
-
-		} while (!selection.equalsIgnoreCase("X"));
-	}
-
 
 	// Create banner title for all menu options
 	private static void banner(String bannerName) {
@@ -472,14 +472,36 @@ public class application {
 		System.out.println("Account " + username + " created");
 	}
 
-	// Function to reset password - later sprint
+	// Function to reset password
 	private static void resetPassword() {
 		String RESETPWD_BANNER = "Reset Password";
 		banner(RESETPWD_BANNER);
-		System.out.println("Prompts to reset password");
-		System.out.println("!!!FUNCTIONALITY NOT YET COMPLETED!!!");
 
-		// Add code here to reset password
+		System.out.println("\nPlease enter a username: ");
+		String username = getUserInput();
+
+		System.out.println("\nPlease enter your email address: ");
+		String email = getUserInput();
+
+		User match = null;
+		for (User u : users)
+			if (u.username.equals(username) && u.email.equals(email)) match = u;
+
+		if (null != match) {
+			System.out.println("\nPlease enter new password: ");
+			String password1 = getUserInput();
+			System.out.println("\nPlease re-enter new password: ");
+			String password2 = getUserInput();
+
+			if (password1.equals(password2)) {
+				match.passwd = password1;
+				System.out.println("\nPassword has been reset.");
+			}
+			else
+				System.out.println("\nPasswords did not match. Password has not been reset.");
+		}
+		else
+			System.out.println("\nUser has not been found.");
 
 		System.out.println();
 	}
@@ -512,8 +534,7 @@ public class application {
 	}
 
 	// Function to create ticket in the system
-	private static void createTicket(final String USERNAME)
-	{
+	private static void createTicket(final String USERNAME) {
 		String[] fullName;
 		String fname = "";
 		String lname = "";
@@ -614,8 +635,7 @@ public class application {
 	}
 
 	// Function to view all tickets assigned to a person
-	private static void viewTickets()
-	{
+	private static void viewTickets() {
 		String VIEWTICKET_BANNER = "View your tickets";
 		banner(VIEWTICKET_BANNER);
 		System.out.println("Show me all your tickets ");
@@ -686,8 +706,7 @@ public class application {
 	}
 
 	// Function to change ticket priority
-	private static void changeTicketPriority()
-	{
+	private static void changeTicketPriority() {
 		int index = 0;
 		int userIndex = 0;
 		String CHGTICKETPR_BANNER = "Change ticket priority";
@@ -736,8 +755,7 @@ public class application {
 	}
 
 	//Allows technician to search for and close specified ticket
-	private static void closeTicket()
-	{
+	private static void closeTicket() {
 		String CLOSETICKET_BANNER = "Ticket closure";
 		banner(CLOSETICKET_BANNER);
 		String ticketID = "";
@@ -784,8 +802,7 @@ public class application {
 	}
 
 	// Function to add users that are not ones manually created by each user
-	private static void insertDefaultUsers()
-	{
+	private static void insertDefaultUsers() {
 		users.add(new User("hstyles", "Harry Styles",  "hstyles@cinco.com.au", "12345", "1", 0));
 		users.add(new User("nhoran", "Niall Horan", "nhoran@cinco.com.au", "12345", "1", 0));
 		users.add(new User("ltomlinson", "Louis Tomlinson", "ltomlinson@cinco.com.au", "12345", "2", 0));
@@ -817,7 +834,8 @@ public class application {
 		// Find tickets to be archived in the database and change their status
 		ticketsToArchive.forEach((t) -> tickets.get(databaseSearch(DatabaseType.TICKET, t.getTicketID())).setStatus(TicketStatus.ARCHIVED));
 	}
-	
+
+	// Retrieves tickets by passed status
 	private static ArrayList<Ticket> getTicketsByStatus(TicketStatus status) {
 		ArrayList<Ticket> byStatus = new ArrayList<Ticket>();
 		tickets.rawList().forEach((t) -> {
@@ -828,8 +846,7 @@ public class application {
 	}
 
 	// Function to view all tickets that are archived
-	private static void viewSelectedTickets(ArrayList<Ticket> archivedTickets, String ticketType)
-	{
+	private static void viewSelectedTickets(ArrayList<Ticket> archivedTickets, String ticketType) {
 		// Messaging
 		String VIEWTICKET_BANNER = "View all " + ticketType + " tickets";
 		banner(VIEWTICKET_BANNER);
