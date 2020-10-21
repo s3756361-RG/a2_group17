@@ -120,18 +120,18 @@ public class application {
 		@Override
 		public int compareTo(Ticket t) {
 			if 	(fname.equals(t.fname) && 
-				lname.equals(t.lname) &&
-				staffID.equals(t.staffID) &&
-				email.equals(t.email) &&
-				contact.equals(t.contact) && 
-				description.equals(t.description) &&
-				//skip severity and close date and status && assignee
-				ticketID.equals(t.ticketID) &&
-				serviceDesk.equals(t.serviceDesk) &&
-				createdDate.equals(t.createdDate)) 
-					return 1;
-				else 
-					return 0;
+					lname.equals(t.lname) &&
+					staffID.equals(t.staffID) &&
+					email.equals(t.email) &&
+					contact.equals(t.contact) && 
+					description.equals(t.description) &&
+					//skip severity and close date and status && assignee
+					ticketID.equals(t.ticketID) &&
+					serviceDesk.equals(t.serviceDesk) &&
+					createdDate.equals(t.createdDate)) 
+				return 1;
+			else 
+				return 0;
 		}	
 	}
 	// Main class
@@ -211,7 +211,7 @@ public class application {
 	}
 
 	// Validate user input to ensure it is semi valid
-	public static String get_user_input() {
+	public static String getUserInput() {
 		String input = "";
 		boolean valid = false;
 		do {
@@ -228,7 +228,7 @@ public class application {
 	}
 
 	// Checks whether a user exists in the system
-	private static boolean check_login(final String USERNAME, final String PASSWORD) {
+	private static boolean checkLogin(final String USERNAME, final String PASSWORD) {
 
 		boolean valid = false;
 		try {
@@ -262,9 +262,9 @@ public class application {
 		System.out.println("\nPlease enter login credentials\n");
 
 		System.out.println("Please enter your username: ");
-		String username = get_user_input();
+		String username = getUserInput();
 		System.out.println("Please enter your password: ");
-		String passwd = get_user_input();
+		String passwd = getUserInput();
 
 		//Check login details
 		//		do {
@@ -272,7 +272,7 @@ public class application {
 		//		} while(!valid);
 
 		// If valid login exists, then start next menu system
-		if (check_login(username, passwd))
+		if (checkLogin(username, passwd))
 		{
 			// Logged in menu system for the program
 			String selection;
@@ -361,7 +361,7 @@ public class application {
 	//Function to check if logged in user is a technician
 	private static boolean isTechnician(final String USERNAME) {
 		boolean valid;
-		int index = database_search(DatabaseType.USER, USERNAME);
+		int index = databaseSearch(DatabaseType.USER, USERNAME);
 		if(users.get(index).role.contentEquals("1") || users.get(index).role.contentEquals("2")) {
 			valid = true;
 		} else {
@@ -384,23 +384,23 @@ public class application {
 
 		// Request inputs from user
 		System.out.println("\nPlease enter a username: ");
-		username = get_user_input();
+		username = getUserInput();
 
 		System.out.println("\nPlease enter your name: ");
-		name = get_user_input();
-		
+		name = getUserInput();
+
 		System.out.println("\nPlease enter your email address: ");
-		email = get_user_input();
+		email = getUserInput();
 
 		System.out.println("\nPlease enter your password: ");
-		passwd = get_user_input();
+		passwd = getUserInput();
 
 		// All created users are staff not technicians 
 		String defaultRole = "0";
-		
+
 		// Add user data to userDatabase array, and increase number of users value
 		users.add(new User(username, name, email, passwd, defaultRole, 0));
-		
+
 		// Inform the user the accounts was created successfully
 		System.out.println("Account " + username + " created");
 	}
@@ -418,7 +418,7 @@ public class application {
 	}
 
 	// Function to check severity of ticket is valid
-	private static boolean check_severity(final String severity) {
+	private static boolean checkSeverity(final String severity) {
 		boolean valid = false;
 		if(severity.contentEquals("1") || severity.contentEquals("2") || severity.contentEquals("3")) {
 			valid = true;
@@ -428,7 +428,7 @@ public class application {
 		return valid;
 	}
 
-	private static Severity set_ticket_severity(final String severity) {
+	private static Severity setTicketSeverity(final String severity) {
 		Severity choice = null;
 		switch(severity) {
 		case "1" :
@@ -450,7 +450,7 @@ public class application {
 		String[] fullName;
 		String fname = "";
 		String lname = "";
-		Severity severity_rating;
+		Severity severityRating;
 		String email = "";
 		String severity = "";
 		String serviceDesk = "";
@@ -476,20 +476,47 @@ public class application {
 
 		//Get remaining data from user
 		System.out.print("\nPlease enter your staffID: ");
-		String staffID = get_user_input();
+		String staffID = getUserInput();
 		System.out.print("\nPlease enter your contact number: ");
-		String contact_number = get_user_input();
+		String contact_number = getUserInput();
 		System.out.print("\nPlease enter a brief description of the problem: ");
-		String description = get_user_input();
+		String description = getUserInput();
 		System.out.print("\nPlease set the severity (1 = Low | 2 = Medium | 3 = High): ");
 		//Get severity rating from user
 		do {
-			severity = get_user_input();
-		} while(!check_severity(severity));
+			severity = getUserInput();
+		} while(!checkSeverity(severity));
 
 		//Set severity rating and service desk
-		severity_rating = set_ticket_severity(severity);
-		switch(severity_rating) {
+		severityRating = setTicketSeverity(severity);
+		serviceDesk = setServiceDesk(severityRating);
+
+		//Display final ticket to user to check
+		System.out.println("\nCheck the final ticket below");
+		System.out.println("\nTicket ID: " + ticketID + "\nFirst Name: " + fname + "\nLast Name: " + lname + "\nStaffID: " + staffID + "\nEmail: "
+				+ email + "\nContact Number: " + contact_number + "\nDescription: " + description + "\nSeverity: " + severityRating.toString() 
+				+ "\nService Desk Level: " + serviceDesk);
+		System.out.print("\nIf the above details are correct type 'Y' else 'N' to restart: ");
+
+		if(get_user_confirmation("")) {
+
+			//Auto route ticket to technician based on lowest workload (tickets are assigned by technician username)
+			String assignedTo = autoRouteTicket(serviceDesk);
+
+			//Create ticket
+			tickets.add(new Ticket(fname, lname, staffID, email, contact_number, description, severityRating, TicketStatus.OPEN, 
+					ticketID, serviceDesk, assignedTo, LocalDateTime.now(), null));
+			++numTickets;
+
+			System.out.println("\nTicket successfully created!");
+		} else {
+			createTicket(USERNAME);
+		}
+	}
+
+	private static String setServiceDesk(Severity SEV) {
+		String serviceDesk = "";
+		switch(SEV) {
 		case LOW:
 			serviceDesk = "1";
 			break;
@@ -500,28 +527,7 @@ public class application {
 			serviceDesk = "2";
 			break;
 		}
-
-		//Display final ticket to user to check
-		System.out.println("\nCheck the final ticket below");
-		System.out.println("\nTicket ID: " + ticketID + "\nFirst Name: " + fname + "\nLast Name: " + lname + "\nStaffID: " + staffID + "\nEmail: "
-				+ email + "\nContact Number: " + contact_number + "\nDescription: " + description + "\nSeverity: " + severity_rating.toString() 
-				+ "\nService Desk Level: " + serviceDesk);
-		System.out.print("\nIf the above details are correct type 'Y' else 'N' to restart: ");
-
-		if(get_user_confirmation("")) {
-
-			//Auto route ticket to technician based on lowest workload (tickets are assigned by technician username)
-			String assignedTo = autoRouteTicket(serviceDesk);
-
-			//Create ticket
-			tickets.add(new Ticket(fname, lname, staffID, email, contact_number, description, severity_rating, TicketStatus.OPEN, 
-					ticketID, serviceDesk, assignedTo, LocalDateTime.now(), null));
-			++numTickets;
-
-			System.out.println("\nTicket successfully created!");
-		} else {
-			createTicket(USERNAME);
-		}
+		return serviceDesk;
 	}
 
 	//Function to auto route a newly created ticket to the appropriate technician
@@ -546,10 +552,10 @@ public class application {
 		String VIEWTICKET_BANNER = "View your tickets";
 		banner(VIEWTICKET_BANNER);
 		System.out.println("Show me all your tickets ");
-		
+
 		tickets.forEach((t) -> {
 			if(t.getStatus() == TicketStatus.OPEN)
-				displayEntry(database_search(DatabaseType.TICKET, t.getTicketID()), DatabaseType.TICKET, "", false);
+				displayEntry(databaseSearch(DatabaseType.TICKET, t.getTicketID()), DatabaseType.TICKET, "", false);
 		});
 	}
 
@@ -564,10 +570,10 @@ public class application {
 			System.out.println("\nTicket ID: " + tck.ticketID + "\nFirst Name: " + 
 					tck.fname + "\nLast Name: " + tck.lname + "\nStaffID: " 
 					+ tck.staffID+ "\nEmail: " + tck.email 
-							+ "\nContact Number: " + tck.contact + "\nDescription: " + 
-							tck.description + "\nSeverity: " + tck.sev + "\nService"
-									+ " Desk Level: " + tck.serviceDesk + "\nAssigned To: "
-							+ tck.ticketAssignedTo);
+					+ "\nContact Number: " + tck.contact + "\nDescription: " + 
+					tck.description + "\nSeverity: " + tck.sev + "\nService"
+					+ " Desk Level: " + tck.serviceDesk + "\nAssigned To: "
+					+ tck.ticketAssignedTo);
 		} else {
 			if(users.get(INDEX).role.contentEquals("1")) {
 				role = "Level 1 Technician";
@@ -581,7 +587,7 @@ public class application {
 	}
 
 	//Function to search either the ticket or user database. The function returns the index of the search result or null
-	private static int database_search(final DatabaseType TYPE, final String SEARCH_KEY){
+	private static int databaseSearch(final DatabaseType TYPE, final String SEARCH_KEY){
 		int index = 0;
 		boolean found = false;
 
@@ -616,15 +622,19 @@ public class application {
 	private static void changeTicketPriority()
 	{
 		int index = 0;
+		int userIndex = 0;
 		String CHGTICKETPR_BANNER = "Change ticket priority";
 		banner(CHGTICKETPR_BANNER);
-		String new_severity = "";
+		String newSeverity = "";
+		String newServiceDesk = "";
+		String newAssignedTo = "";
 		Severity sev;
+		
 		//Retrieve ticket from user
 		System.out.println("Enter the ticket ID you would like to change priority for (T<number>): ");
-		String ticket_id = get_user_input();
+		String ticket_id = getUserInput();
 		//Search for ticket and return
-		index = database_search(DatabaseType.TICKET, ticket_id);
+		index = databaseSearch(DatabaseType.TICKET, ticket_id);
 		if(index == -1) {
 			System.out.println("\nSorry, ticket not found!\n");
 			return;
@@ -633,10 +643,25 @@ public class application {
 		if(get_user_confirmation("")) {
 			System.out.print("\nPlease set the new severity status (1 = Low | 2 = Medium | 3 = High): ");
 			do {
-				new_severity = get_user_input();
-			} while (!check_severity(new_severity)); 
-			sev = set_ticket_severity(new_severity);
+				newSeverity = getUserInput();
+			} while (!checkSeverity(newSeverity));
+			
+			//Set the new level of severity and appropriate service desk
+			sev = setTicketSeverity(newSeverity);
+			newServiceDesk = setServiceDesk(sev);
 			tickets.get(index).sev = sev;
+			
+			//Re route ticket to new technician if new level of service desk is required
+			if(!newServiceDesk.contentEquals(tickets.get(index).serviceDesk)) {
+				//Search for user that ticket is currently assigned to and de increment num of assigned tickets
+				userIndex = databaseSearch(DatabaseType.USER, tickets.get(index).ticketAssignedTo);
+				--users.get(userIndex).num_assigned_tickets;
+				//Find the new user ticket is reassigned to
+				newAssignedTo = autoRouteTicket(newServiceDesk);
+				tickets.get(index).ticketAssignedTo = newAssignedTo;
+				tickets.get(index).serviceDesk = newServiceDesk;
+			}
+			
 			System.out.println("\nTicket severity updated successfully!");
 		} else {
 			changeTicketPriority();
@@ -651,8 +676,8 @@ public class application {
 		String ticketID = "";
 		int index = 0;
 		System.out.println("Type the ticket ID of the ticket you'd like to close: ");
-		ticketID = get_user_input();
-		index = database_search(DatabaseType.TICKET, ticketID);
+		ticketID = getUserInput();
+		index = databaseSearch(DatabaseType.TICKET, ticketID);
 		if(index == -1) {
 			System.out.println("\nSorry, ticket not found!\n");
 			return; 
@@ -677,7 +702,7 @@ public class application {
 		boolean valid = false;
 		boolean result = false;
 		do {
-			String confirmation = get_user_input();
+			String confirmation = getUserInput();
 			if(confirmation.toUpperCase().contentEquals("Y")) {
 				valid = true;
 				result = true;
@@ -718,12 +743,12 @@ public class application {
 
 		return filteredTickets;
 	}
-
+	
 	// Archives all the tickets passed
 	// Input: ArrayList<Ticket> tickets to archive
 	private static void archiveTickets(ArrayList<Ticket> ticketsToArchive) {
 		// Find tickets to be archived in the database and change their status
-		ticketsToArchive.forEach((t) -> tickets.get(database_search(DatabaseType.TICKET, t.getTicketID())).setStatus(TicketStatus.ARCHIVED));
+		ticketsToArchive.forEach((t) -> tickets.get(databaseSearch(DatabaseType.TICKET, t.getTicketID())).setStatus(TicketStatus.ARCHIVED));
 	}
 	
 	// Function to view all tickets that are archived
@@ -736,7 +761,7 @@ public class application {
 
 		tickets.forEach((t) -> {
 			if(t.getStatus() == TicketStatus.ARCHIVED)
-				displayEntry(database_search(DatabaseType.TICKET, t.getTicketID()), DatabaseType.TICKET, "", false);
+				displayEntry(databaseSearch(DatabaseType.TICKET, t.getTicketID()), DatabaseType.TICKET, "", false);
 		});
 
 		System.out.println("End of Archived tickets display.");
