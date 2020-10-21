@@ -5,27 +5,55 @@ import java.lang.*;
 import java.util.*;
 import java.time.*;
 
-
-
 /* Ticketing system class */
 public class application {
 
 	//Various enums to help with setting statuses and types
 	public enum TicketStatus{
-		CLOSED,
-		OPEN, 
-		ARCHIVED
+		CLOSED("Closed"),
+		OPEN("Open"), 
+		ARCHIVED("Archived");
+
+		private final String textRepresentation;
+
+		private TicketStatus(String textRepresentation) {
+			this.textRepresentation = textRepresentation;
+		}
+
+		@Override public String toString() {
+			 return textRepresentation;
+		}
 	}
 	
 	public enum Severity {
-		LOW,
-		MEDIUM,
-		HIGH
+		LOW("Low"),
+		MEDIUM("Medium"),
+		HIGH("High");
+		
+		private final String textRepresentation;
+
+		private Severity(String textRepresentation) {
+			this.textRepresentation = textRepresentation;
+		}
+
+		@Override public String toString() {
+			 return textRepresentation;
+		}
 	}
 	
 	public enum DatabaseType {
-		USER,
-		TICKET
+		USER("User"),
+		TICKET("Ticket");
+		
+		private final String textRepresentation;
+
+		private DatabaseType(String textRepresentation) {
+			this.textRepresentation = textRepresentation;
+		}
+
+		@Override public String toString() {
+			 return textRepresentation;
+		}
 	}
 	
 	static class TicketArrayList {
@@ -65,7 +93,7 @@ public class application {
 	private static ArrayList<User> users = new ArrayList<User>();
 	private static TicketArrayList tickets = new TicketArrayList();
 	private static int numTickets = 0;
-	public static int TICKET_EXPIRY_TIME = 0; // This is in hours. Set to 0 for testing.
+	public static int TICKET_EXPIRY_TIME = 1; // This is in hours. Set to 0 for testing.
 
 	//Error messages
 	private static final String NOT_TECHNICIAN_ERROR = "\nSorry, you must be a qualified technician to complete this action";
@@ -321,6 +349,7 @@ public class application {
 				System.out.println("D. Close ticket (Technicians only)");
 				System.out.println("E. Archive tickets");
 				System.out.println("F. View all archived tickets");
+				System.out.println("G. View all archived and closed tickets");
 				System.out.println("X. Logout\n");
 
 				// Prompt user to enter selection
@@ -371,7 +400,12 @@ public class application {
 							System.out.println("There are no tickets to be archived.");
 						break;
 					case "F": 
-						viewAllArchivedTickets();
+						viewSelectedTickets(getTicketsByStatus(TicketStatus.ARCHIVED), "archived");
+						break;
+					case "G":
+						ArrayList<Ticket> t = getTicketsByStatus(TicketStatus.ARCHIVED);
+						t.addAll(getTicketsByStatus(TicketStatus.CLOSED));
+						viewSelectedTickets(t, "archived and closed");
 						break;
 					case "X":
 						System.out.println("Logging out...");
@@ -606,7 +640,7 @@ public class application {
 					+ "\nContact Number: " + tck.contact + "\nDescription: " + 
 					tck.description + "\nSeverity: " + tck.sev + "\nService"
 					+ " Desk Level: " + tck.serviceDesk + "\nAssigned To: "
-					+ tck.ticketAssignedTo);
+					+ tck.ticketAssignedTo + "\nStatus: " + tck.status.toString());
 		} else {
 			if(users.get(INDEX).role.contentEquals("1")) {
 				role = "Level 1 Technician";
@@ -784,21 +818,28 @@ public class application {
 		ticketsToArchive.forEach((t) -> tickets.get(databaseSearch(DatabaseType.TICKET, t.getTicketID())).setStatus(TicketStatus.ARCHIVED));
 	}
 	
+	private static ArrayList<Ticket> getTicketsByStatus(TicketStatus status) {
+		ArrayList<Ticket> byStatus = new ArrayList<Ticket>();
+		tickets.rawList().forEach((t) -> {
+			if(t.getStatus() == status)
+				byStatus.add(t);
+		});
+		return byStatus;
+	}
+
 	// Function to view all tickets that are archived
-	private static void viewAllArchivedTickets()
+	private static void viewSelectedTickets(ArrayList<Ticket> archivedTickets, String ticketType)
 	{
 		// Messaging
-		String VIEWTICKET_BANNER = "View all archived tickets";
+		String VIEWTICKET_BANNER = "View all " + ticketType + " tickets";
 		banner(VIEWTICKET_BANNER);
-		System.out.println("Displaying Archived tickets:");
+		System.out.println("Displaying " + ticketType + " tickets:");
 
-		tickets.rawList().forEach((t) -> {
-			if(t.getStatus() == TicketStatus.ARCHIVED)
+		archivedTickets.forEach((t) -> {
 				displayEntry(databaseSearch(DatabaseType.TICKET, t.getTicketID()), DatabaseType.TICKET, "", false);
 		});
 
-		System.out.println("End of Archived tickets display.");
+		System.out.println("End of " + ticketType + " tickets display.");
 	}
-
 
 }
