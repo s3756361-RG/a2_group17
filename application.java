@@ -10,36 +10,68 @@ import java.time.*;
 /* Ticketing system class */
 public class application {
 
+	//Various enums to help with setting statuses and types
+	public enum TicketStatus{
+		CLOSED,
+		OPEN, 
+		ARCHIVED
+	}
+	
+	public enum Severity {
+		LOW,
+		MEDIUM,
+		HIGH
+	}
+	
+	public enum DatabaseType {
+		USER,
+		TICKET
+	}
+	
+	static class TicketArrayList {
+		private ArrayList<Ticket> list;
+
+		public TicketArrayList() { list = new ArrayList<Ticket>(); }
+
+		// This is not very performance focused but will work fine
+		public void add(Ticket item) { 
+			list.add(item);  
+			internalTicketArchive();
+		}
+		public void remove(Ticket item) { 
+			list.remove(item); 
+			internalTicketArchive();
+		}
+		public Ticket get(int index) { 
+			internalTicketArchive();
+			return list.get(index); 
+		}
+		//
+		
+		public int size() { return list.size(); }
+		public ArrayList<Ticket> rawList() { return list; }
+
+		private void internalTicketArchive()
+		{
+			this.list.forEach((t) -> {
+				if (t.getStatus() == TicketStatus.CLOSED && 
+						LocalDateTime.now().isAfter(t.getClosedDate().plusHours(TICKET_EXPIRY_TIME)))
+					t.setStatus(TicketStatus.ARCHIVED);
+			});
+		}
+	}
+
 	// Create arraylists to hold all user and ticketing information
 	private static ArrayList<User> users = new ArrayList<User>();
-	private static ArrayList<Ticket> tickets = new ArrayList<Ticket>();
+	private static TicketArrayList tickets = new TicketArrayList();
 	private static int numTickets = 0;
-	private static int TICKET_EXPIRY_TIME = 2; // This is in hours. Set to 0 for testing.
+	public static int TICKET_EXPIRY_TIME = 0; // This is in hours. Set to 0 for testing.
 
 	//Error messages
 	private static final String NOT_TECHNICIAN_ERROR = "\nSorry, you must be a qualified technician to complete this action";
 
 	//Shared Scanner which can be used by all helper methods below
 	private static Scanner SC = new Scanner(System.in);
-
-	//Various enums to help with setting statuses and types
-	private enum TicketStatus{
-		CLOSED,
-		OPEN, 
-		ARCHIVED
-	}
-
-	private enum Severity {
-		LOW,
-		MEDIUM,
-		HIGH
-	}
-
-	private enum DatabaseType {
-		USER,
-		TICKET
-	}
-
 	//User class
 	static class User implements Comparable<User>{
 
@@ -105,15 +137,15 @@ public class application {
 		public LocalDateTime getClosedDate() { return this.closedDate; }
 		public String getTicketID() { return this.ticketID; }
 
-		private void setSev(Severity sev) {
+		public void setSev(Severity sev) {
 			this.sev = sev;
 		}
 
-		private void setStatus(TicketStatus status) {
+		public void setStatus(TicketStatus status) {
 			this.status = status;
 		}
 
-		private void setTicketAssignedTo(String ticketAssignedTo) {
+		public void setTicketAssignedTo(String ticketAssignedTo) {
 			this.ticketAssignedTo = ticketAssignedTo;
 		}
 
@@ -331,9 +363,10 @@ public class application {
 					case "E":
 						ArrayList<Ticket> readyToArchive = getTicketsForArchiving(tickets);
 						int readyToArchiveCount = readyToArchive.size();
-						archiveTickets(readyToArchive);
-						if(readyToArchiveCount > 0)
+						if(readyToArchiveCount > 0) {
+							archiveTickets(readyToArchive);
 							System.out.println("Successfully archived " +  readyToArchiveCount + " tickets.");
+						}
 						else 
 							System.out.println("There are no tickets to be archived.");
 						break;
@@ -553,7 +586,7 @@ public class application {
 		banner(VIEWTICKET_BANNER);
 		System.out.println("Show me all your tickets ");
 
-		tickets.forEach((t) -> {
+		tickets.rawList().forEach((t) -> {
 			if(t.getStatus() == TicketStatus.OPEN)
 				displayEntry(databaseSearch(DatabaseType.TICKET, t.getTicketID()), DatabaseType.TICKET, "", false);
 		});
@@ -729,13 +762,13 @@ public class application {
 	// Returns an array of same size as the database with only returned tickets that should be Archived
 	// Input: ArrayList<Ticket> TicketDatabase
 	// Output: ArrayList<Ticket>
-	private static ArrayList<Ticket> getTicketsForArchiving(ArrayList<Ticket> tickets) {
+	private static ArrayList<Ticket> getTicketsForArchiving(TicketArrayList tickets) {
 		banner("Getting tickets for archiving");
 		// Creates internal structure for holding tickets that will be appropriate for Archiving
 		ArrayList<Ticket> filteredTickets = new ArrayList<Ticket>();
 
 		// Loops through all tickets and checks for their status and expiry time
-		tickets.forEach((t) -> {
+		tickets.rawList().forEach((t) -> {
 			if (t.getStatus() == TicketStatus.CLOSED && LocalDateTime.now().isAfter(t.getClosedDate().plusHours(TICKET_EXPIRY_TIME)))
 				// If fits, it's added to archive list
 				filteredTickets.add(t);
@@ -759,7 +792,7 @@ public class application {
 		banner(VIEWTICKET_BANNER);
 		System.out.println("Displaying Archived tickets:");
 
-		tickets.forEach((t) -> {
+		tickets.rawList().forEach((t) -> {
 			if(t.getStatus() == TicketStatus.ARCHIVED)
 				displayEntry(databaseSearch(DatabaseType.TICKET, t.getTicketID()), DatabaseType.TICKET, "", false);
 		});
