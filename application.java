@@ -725,6 +725,7 @@ public class application {
 		// Find tickets to be archived in the database and change their status
 		ticketsToArchive.forEach((t) -> tickets.get(database_search(DatabaseType.TICKET, t.getTicketID())).setStatus(TicketStatus.ARCHIVED));
 	}
+	
 	// Function to view all tickets that are archived
 	private static void viewAllArchivedTickets()
 	{
