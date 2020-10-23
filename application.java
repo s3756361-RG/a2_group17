@@ -3,6 +3,7 @@ import java.io.*;
 import java.lang.*; 
 import java.util.*;
 import java.time.*;
+import java.time.format.*;
 
 /* Ticketing system class */
 public class application {
@@ -12,6 +13,13 @@ public class application {
 	private static TicketArrayList tickets = new TicketArrayList();
 	private static int numTickets = 0;
 	public static int TICKET_EXPIRY_TIME = 1; // This is in hours. Set to 0 for testing.
+	public static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"); //Formatter for Timestamps
+
+	//Error messages
+	private static final String NOT_TECHNICIAN_ERROR = "\nSorry, you must be a qualified technician to complete this action";
+	//Shared Scanner which can be used by all helper methods below
+	private static Scanner SC = new Scanner(System.in);
+
 
 	//Various enums to help with setting statuses and types
 	public enum TicketStatus{
@@ -93,12 +101,6 @@ public class application {
 			});
 		}
 	}
-
-	//Error messages
-	private static final String NOT_TECHNICIAN_ERROR = "\nSorry, you must be a qualified technician to complete this action";
-
-	//Shared Scanner which can be used by all helper methods below
-	private static Scanner SC = new Scanner(System.in);
 
 	// Main class
 	public static void main(String[] args) {
@@ -235,6 +237,10 @@ public class application {
 			this.ticketAssignedTo = ticketAssignedTo;
 		}
 
+		public String getSeverity(){
+			return this.sev.toString();
+		}
+
 		@Override
 		public int compareTo(Ticket t) {
 			if 	(fname.equals(t.fname) && 
@@ -350,6 +356,7 @@ public class application {
 				System.out.println("E. Archive tickets");
 				System.out.println("F. View all archived tickets");
 				System.out.println("G. View all archived and closed tickets");
+				System.out.println("H. View period report");
 				System.out.println("X. Logout\n");
 
 				// Prompt user to enter selection
@@ -400,12 +407,18 @@ public class application {
 							System.out.println("There are no tickets to be archived.");
 						break;
 					case "F": 
-						viewSelectedTickets(getTicketsByStatus(TicketStatus.ARCHIVED), "archived");
+						viewSelectedTickets(getTicketsByStatus(TicketStatus.ARCHIVED, null, null), "archived");
 						break;
 					case "G":
-						ArrayList<Ticket> t = getTicketsByStatus(TicketStatus.ARCHIVED);
-						t.addAll(getTicketsByStatus(TicketStatus.CLOSED));
+						ArrayList<Ticket> t = getTicketsByStatus(TicketStatus.ARCHIVED, null, null);
+						t.addAll(getTicketsByStatus(TicketStatus.CLOSED, null, null));
 						viewSelectedTickets(t, "archived and closed");
+						break;
+					case "H":
+						// Default values for the period
+						LocalDateTime from = LocalDateTime.now().plusHours(-24);
+						LocalDateTime to = LocalDateTime.now();
+						showPeriodReport(from, to);
 						break;
 					case "X":
 						System.out.println("Logging out...");
@@ -423,6 +436,135 @@ public class application {
 			System.out.println("Incorrect Login");
 		}
 		System.out.println();
+	}
+
+	// Displays menu for Period Report
+	private static void showPeriodReport(LocalDateTime from, LocalDateTime to) {
+		String selection;
+
+		do {
+			// Display Menu Options
+			String WELCOME_BANNER = "Period report options";
+			banner(WELCOME_BANNER);
+			System.out.println("A. Set FROM date");
+			System.out.println("B. Set TO date");
+			System.out.println("C. Display a Period report");
+			System.out.println("X. Exit Period report options");
+			System.out.println();
+
+			// Prompt user to enter selection
+			System.out.print("Enter selection: ");
+			selection = SC.nextLine();
+			System.out.println();
+
+			// Validate selection input length, ensure it is only 1 character in length
+			if (selection.length() != 1) {
+				System.out.println("Error - invalid selection!");
+			}
+
+			// Otherwise, take input and go to appropriate method
+			else {
+				// process user's selection
+				switch (selection.toUpperCase()) {
+					case "A":
+						from = getUserEnteredDateTime();
+						break;
+					case "B":
+						to = getUserEnteredDateTime();
+						break;
+					case "C":
+						printPeriodReport(from, to);
+						break;
+					case "X":
+						System.out.println("Exiting the Period report option menu...");
+						break;
+					default:
+						System.out.println("Error - invalid selection!");
+				}
+			}
+			System.out.println();
+
+		} while (!selection.equalsIgnoreCase("X"));
+	}
+
+	// Accepts input for a timestamp
+	private static LocalDateTime getUserEnteredDateTime() {
+		LocalDateTime dateTime;
+
+		System.out.println("\nPlease enter a valid time stamp (dd/mm/yyyy hh:mm): ");
+		String dateTimeString = getUserInput();
+
+		try {
+			dateTime = LocalDateTime.parse(dateTimeString, formatter);
+		} catch (DateTimeParseException conversionException) {
+			System.out.println("\nCould not convert the input. Please try again.");
+			dateTime = getUserEnteredDateTime();
+		}
+		return dateTime;
+	}
+
+	// Helper to format Java duration class
+	public static String formatDuration(Duration d) {
+		long days = d.toDays();
+		d = d.minusDays(days);
+		long hours = d.toHours();
+		d = d.minusHours(hours);
+		long minutes = d.toMinutes();
+		d = d.minusMinutes(minutes);
+		long seconds = d.getSeconds() ;
+		return
+				(days ==  0?"":days+" days,")+
+						(hours == 0?"":hours+" hours,")+
+						(minutes ==  0?"":minutes+" minutes,")+
+						(seconds == 0?"":seconds+" seconds");
+	}
+
+	// Displays Period report
+	private static void printPeriodReport(LocalDateTime from, LocalDateTime to) {
+		// Get open tickets
+		ArrayList<Ticket> openTickets = getTicketsByStatus(TicketStatus.OPEN, from, to);
+		// Get all closed+archived tickets
+		ArrayList<Ticket> closedOrArchivedTickets = getTicketsByStatus(TicketStatus.CLOSED, from, to);
+		closedOrArchivedTickets.addAll(getTicketsByStatus(TicketStatus.ARCHIVED, from, to));
+		// Count of closed or archived tickets
+		long closedOrArchived = closedOrArchivedTickets.size();
+		// Count of all tickets
+		long submitted = closedOrArchived + openTickets.size();
+
+		String RESETPWD_BANNER = "Period report from " + from.format(formatter) + " - " + to.format(formatter);
+		banner(RESETPWD_BANNER);
+
+		System.out.printf("There were %d created tickets, out of %d have been closed and/or archived and %d remain " +
+				"open in selected period.\n", submitted, closedOrArchived, submitted-closedOrArchived);
+
+		System.out.println("Displaying resolved tickets:");
+		closedOrArchivedTickets.forEach(t ->
+				{
+					Duration resolvePeriod = Duration.between(t.createdDate, t.closedDate);
+					System.out.println(
+							"\nTicket ID: " + t.ticketID +
+							"\nFirst Name: " + t.fname +
+							"\nLast Name: " + t.lname +
+							"\nStaffID: " + t.staffID +
+							"\nService Desk Level: " + t.serviceDesk +
+							"\nAssigned To: " + t.ticketAssignedTo +
+							"\nOpened On: " + t.createdDate.format(formatter) +
+							"\nTime to resolve: " + formatDuration(resolvePeriod));});
+
+		System.out.println("");
+		System.out.println("Displaying unresolved, open tickets:");
+		openTickets.forEach(t ->
+				System.out.println(
+						"\nTicket ID: " + t.ticketID +
+						"\nFirst Name: " + t.fname +
+						"\nLast Name: " + t.lname +
+						"\nStaffID: " + t.staffID +
+						"\nService Desk Level: " + t.serviceDesk +
+						"\nAssigned To: " + t.ticketAssignedTo +
+						"\nOpened On: " + t.createdDate.format(formatter) +
+						"\nSeverity: " + t.getSeverity().toString()));
+
+ 		System.out.printf("\nEnd of period report.\n");
 	}
 
 	//Function to check if logged in user is a technician
@@ -811,8 +953,6 @@ public class application {
 	}
 
 	// Returns an array of same size as the database with only returned tickets that should be Archived
-	// Input: ArrayList<Ticket> TicketDatabase
-	// Output: ArrayList<Ticket>
 	private static ArrayList<Ticket> getTicketsForArchiving(TicketArrayList tickets) {
 		banner("Getting tickets for archiving");
 		// Creates internal structure for holding tickets that will be appropriate for Archiving
@@ -829,14 +969,16 @@ public class application {
 	}
 	
 	// Archives all the tickets passed
-	// Input: ArrayList<Ticket> tickets to archive
 	private static void archiveTickets(ArrayList<Ticket> ticketsToArchive) {
 		// Find tickets to be archived in the database and change their status
 		ticketsToArchive.forEach((t) -> tickets.get(databaseSearch(DatabaseType.TICKET, t.getTicketID())).setStatus(TicketStatus.ARCHIVED));
 	}
 
 	// Retrieves tickets by passed status
-	private static ArrayList<Ticket> getTicketsByStatus(TicketStatus status) {
+	private static ArrayList<Ticket> getTicketsByStatus(TicketStatus status, LocalDateTime from, LocalDateTime to) {
+		if (null == from) from = LocalDateTime.parse("01/01/1900 00:00", formatter);
+		if (null == to) 	to = LocalDateTime.parse("01/01/2099 00:00", formatter);
+
 		ArrayList<Ticket> byStatus = new ArrayList<Ticket>();
 		tickets.rawList().forEach((t) -> {
 			if(t.getStatus() == status)
@@ -858,5 +1000,4 @@ public class application {
 
 		System.out.println("End of " + ticketType + " tickets display.");
 	}
-
 }
